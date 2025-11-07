@@ -6,9 +6,6 @@
  */
 package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.app;
 
-/**
- * @author Marc Schwitzguebel {@literal <marc.schwitzguebel_external at rte-france.com>}
- */
 public class CoreValidD2ConservativeAdapterException extends RuntimeException {
 
     public CoreValidD2ConservativeAdapterException(final String message, final Throwable throwable) {

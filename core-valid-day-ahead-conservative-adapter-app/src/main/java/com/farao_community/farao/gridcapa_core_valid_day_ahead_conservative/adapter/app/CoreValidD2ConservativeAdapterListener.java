@@ -27,9 +27,7 @@ import java.util.function.Function;
 import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.ERROR;
 import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.READY;
 import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.SUCCESS;
-/**
- * @author Marc Schwitzguebel {@literal <marc.schwitzguebel_external at rte-france.com>}
- */
+
 @Component
 public class CoreValidD2ConservativeAdapterListener {
 
