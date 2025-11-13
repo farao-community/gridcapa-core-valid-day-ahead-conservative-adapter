@@ -6,7 +6,6 @@
  */
 package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.service;
 
-
 import com.farao_community.farao.gridcapa.task_manager.api.TaskDto;
 import com.farao_community.farao.gridcapa.task_manager.api.TaskParameterDto;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.util.LoggingUtil;
@@ -32,13 +31,16 @@ public class JobLauncherManualService {
     private final TaskManagerService taskManagerService;
     private final CopyOnWriteArraySet<String> timestampsBeingLaunched = new CopyOnWriteArraySet<>();
 
-    public JobLauncherManualService(CoreValidD2ConservativeAdapterService adapterService, Logger eventsLogger, TaskManagerService taskManagerService) {
+    public JobLauncherManualService(CoreValidD2ConservativeAdapterService adapterService,
+                                    Logger eventsLogger,
+                                    TaskManagerService taskManagerService) {
         this.adapterService = adapterService;
         this.eventsLogger = eventsLogger;
         this.taskManagerService = taskManagerService;
     }
 
-    public void launchJob(final String timestamp, final List<TaskParameterDto> parameters) {
+    public void launchJob(final String timestamp,
+                          final List<TaskParameterDto> parameters) {
         final String sanifiedTimestamp = LoggingUtil.sanifyString(timestamp);
         LOGGER.info("Received order to launch task {}", sanifiedTimestamp);
         LOGGER.info("Adding {} to tasks being launched.", sanifiedTimestamp);

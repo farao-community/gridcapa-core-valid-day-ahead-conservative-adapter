@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.app;
+package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.service;
 
 import com.farao_community.farao.gridcapa.task_manager.api.ProcessEventDto;
 import com.farao_community.farao.gridcapa.task_manager.api.ProcessFileDto;
@@ -13,7 +13,6 @@ import com.farao_community.farao.gridcapa.task_manager.api.ProcessRunDto;
 import com.farao_community.farao.gridcapa.task_manager.api.TaskDto;
 import com.farao_community.farao.gridcapa.task_manager.api.TaskStatus;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.exception.CoreValidD2ConservativeAdapterException;
-import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.service.CoreValidD2ConservativeAdapterService;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.api.resource.CoreValidD2ConservativeRequest;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.starter.CoreValidD2ConservativeClient;
 import com.farao_community.farao.minio_adapter.starter.MinioAdapter;
@@ -34,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 /**
  * @author Marc Schwitzguebel {@literal <marc.schwitzguebel_external at rte-france.com>}
@@ -98,7 +96,7 @@ class CoreValidD2ConservativeAdapterServiceTest {
     @Test
     void testGetManualCoreValidRequest() {
         final TaskDto taskDto = createTaskDtoWithStatus(TaskStatus.READY);
-        final CoreValidD2ConservativeRequest coreValidRequest = coreValidD2ConservativeAdapterService.getManualCoreValidD2ConservativeRequest(taskDto);
+        final CoreValidD2ConservativeRequest coreValidRequest = coreValidD2ConservativeAdapterService.getManualCoreValidD2ConservativeRequest(taskDto, new ArrayList<>());
         Assertions.assertEquals(taskDto.getId().toString(), coreValidRequest.getId());
         Assertions.assertEquals(cnecRamFileName, coreValidRequest.getCnecRam().getFilename());
         Assertions.assertEquals(cnecRamFileUrl, coreValidRequest.getCnecRam().getUrl());
@@ -113,14 +111,14 @@ class CoreValidD2ConservativeAdapterServiceTest {
 
         Assertions.assertThrows(
                 CoreValidD2ConservativeAdapterException.class,
-                () -> coreValidD2ConservativeAdapterService.getManualCoreValidD2ConservativeRequest(taskDto),
+                () -> coreValidD2ConservativeAdapterService.getManualCoreValidD2ConservativeRequest(taskDto, new ArrayList<>()),
                 "Failed to handle manual run request on timestamp because it has no run history");
     }
 
     @Test
     void testGetAutomaticCoreValidRequest() {
         final TaskDto taskDto = createTaskDtoWithStatus(TaskStatus.READY);
-        final CoreValidD2ConservativeRequest coreValidRequest = coreValidD2ConservativeAdapterService.getAutomaticCoreValidD2ConservativeRequest(taskDto);
+        final CoreValidD2ConservativeRequest coreValidRequest = coreValidD2ConservativeAdapterService.getAutomaticCoreValidD2ConservativeRequest(taskDto, new ArrayList<>());
         Assertions.assertTrue(coreValidRequest.getLaunchedAutomatically());
     }
 
@@ -133,14 +131,14 @@ class CoreValidD2ConservativeAdapterServiceTest {
         processFiles.add(new ProcessFileDto(verticeFilePath, "VORTICE", ProcessFileStatus.VALIDATED, verticeFileName, "docId2", timestamp));
         final List<ProcessEventDto> processEvents = new ArrayList<>();
         final TaskDto taskDto = new TaskDto(id, timestamp, TaskStatus.READY, processFiles, null, Collections.emptyList(), processEvents, Collections.emptyList(), Collections.emptyList());
-        Assertions.assertThrows(IllegalStateException.class, () -> coreValidD2ConservativeAdapterService.getManualCoreValidD2ConservativeRequest(taskDto));
+        Assertions.assertThrows(IllegalStateException.class, () -> coreValidD2ConservativeAdapterService.getManualCoreValidD2ConservativeRequest(taskDto, new ArrayList<>()));
 
     }
 
     @Test
     void consumeReadyAutoTask() {
         final TaskDto taskDto = createTaskDtoWithStatus(TaskStatus.READY);
-        coreValidD2ConservativeAdapterService.consumeAutoTask().accept(taskDto);
+        coreValidD2ConservativeAdapterService.handleAutoTask(taskDto, new ArrayList<>());
         Mockito.verify(coreValidD2ConservativeClient).run(argumentCaptor.capture());
         final CoreValidD2ConservativeRequest coreValidRequest = argumentCaptor.getValue();
         assert coreValidRequest.getLaunchedAutomatically();
@@ -150,7 +148,7 @@ class CoreValidD2ConservativeAdapterServiceTest {
     @EnumSource(value = TaskStatus.class, names = {"READY", "SUCCESS", "ERROR"})
     void consumeReadyTask(final TaskStatus taskStatus) {
         final TaskDto taskDto = createTaskDtoWithStatus(taskStatus);
-        coreValidD2ConservativeAdapterService.consumeTask().accept(taskDto);
+        coreValidD2ConservativeAdapterService.handleManualTask(taskDto, new ArrayList<>());
         Mockito.verify(coreValidD2ConservativeClient).run(argumentCaptor.capture());
         final CoreValidD2ConservativeRequest coreValidRequest = argumentCaptor.getValue();
         Assertions.assertFalse(coreValidRequest.getLaunchedAutomatically());
@@ -159,7 +157,7 @@ class CoreValidD2ConservativeAdapterServiceTest {
     @Test
     void consumeCreatedTask() {
         final TaskDto taskDto = createTaskDtoWithStatus(TaskStatus.CREATED);
-        coreValidD2ConservativeAdapterService.consumeTask().accept(taskDto);
+        coreValidD2ConservativeAdapterService.handleManualTask(taskDto, new ArrayList<>());
         Mockito.verify(coreValidD2ConservativeClient, Mockito.never()).run(argumentCaptor.capture());
     }
 
@@ -167,10 +165,9 @@ class CoreValidD2ConservativeAdapterServiceTest {
     void consumeTaskThrowsException() {
         final TaskDto taskDto = createTaskDtoWithStatus(TaskStatus.READY);
         Mockito.doThrow(RuntimeException.class).when(coreValidD2ConservativeClient).run(Mockito.any());
-        final Consumer<TaskDto> taskDtoConsumer = coreValidD2ConservativeAdapterService.consumeTask();
         Assertions.assertThrows(
                 CoreValidD2ConservativeAdapterException.class,
-                () -> taskDtoConsumer.accept(taskDto),
+                () -> coreValidD2ConservativeAdapterService.handleManualTask(taskDto, new ArrayList<>()),
                 "Error during handling manual run request on TS 2025-10-02T14:30Z");
     }
 
@@ -178,7 +175,7 @@ class CoreValidD2ConservativeAdapterServiceTest {
     @EnumSource(value = TaskStatus.class, names = {"READY", "SUCCESS", "ERROR"})
     void consumeSuccessAutoTask(final TaskStatus taskStatus) {
         final TaskDto taskDto = createTaskDtoWithStatus(taskStatus);
-        coreValidD2ConservativeAdapterService.consumeAutoTask().accept(taskDto);
+        coreValidD2ConservativeAdapterService.handleAutoTask(taskDto, new ArrayList<>());
         Mockito.verify(coreValidD2ConservativeClient).run(argumentCaptor.capture());
         final CoreValidD2ConservativeRequest coreValidD2ConservativeRequest = argumentCaptor.getValue();
         assert coreValidD2ConservativeRequest.getLaunchedAutomatically();
@@ -187,7 +184,7 @@ class CoreValidD2ConservativeAdapterServiceTest {
     @Test
     void consumeCreatedAutoTask() {
         final TaskDto taskDto = createTaskDtoWithStatus(TaskStatus.CREATED);
-        coreValidD2ConservativeAdapterService.consumeAutoTask().accept(taskDto);
+        coreValidD2ConservativeAdapterService.handleAutoTask(taskDto, new ArrayList<>());
         Mockito.verify(coreValidD2ConservativeClient, Mockito.never()).run(argumentCaptor.capture());
     }
 
@@ -195,10 +192,9 @@ class CoreValidD2ConservativeAdapterServiceTest {
     void consumeAutoTaskThrowsException() {
         final TaskDto taskDto = createTaskDtoWithStatus(TaskStatus.READY);
         Mockito.doThrow(RuntimeException.class).when(coreValidD2ConservativeClient).run(Mockito.any());
-        final Consumer<TaskDto> taskDtoConsumer = coreValidD2ConservativeAdapterService.consumeAutoTask();
         Assertions.assertThrows(
                 CoreValidD2ConservativeAdapterException.class,
-                () -> taskDtoConsumer.accept(taskDto),
+                () -> coreValidD2ConservativeAdapterService.handleAutoTask(taskDto, new ArrayList<>()),
                 "Error during handling manual run request on TS 2025-10-02T14:30Z");
     }
 }
