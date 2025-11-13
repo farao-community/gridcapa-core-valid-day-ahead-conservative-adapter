@@ -4,60 +4,53 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.app;
+package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.service;
 
 import com.farao_community.farao.gridcapa.task_manager.api.ProcessFileDto;
 import com.farao_community.farao.gridcapa.task_manager.api.ProcessRunDto;
 import com.farao_community.farao.gridcapa.task_manager.api.TaskDto;
+import com.farao_community.farao.gridcapa.task_manager.api.TaskParameterDto;
 import com.farao_community.farao.gridcapa.task_manager.api.TaskStatus;
+import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.exception.CoreValidD2ConservativeAdapterException;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.api.resource.CoreValidD2ConservativeFileResource;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.api.resource.CoreValidD2ConservativeRequest;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.starter.CoreValidD2ConservativeClient;
 import com.farao_community.farao.minio_adapter.starter.MinioAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.ERROR;
 import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.READY;
 import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.SUCCESS;
 
-@Component
-public class CoreValidD2ConservativeAdapterListener {
+@Service
+public class CoreValidD2ConservativeAdapterService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CoreValidD2ConservativeAdapterListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CoreValidD2ConservativeAdapterService.class);
     public static final String AUTOMATIC = "automatic";
     public static final String MANUAL = "manual";
     private final CoreValidD2ConservativeClient coreValidD2ConservativeClient;
     private final MinioAdapter minioAdapter;
 
-    public CoreValidD2ConservativeAdapterListener(final CoreValidD2ConservativeClient coreValidD2ConservativeClient, final MinioAdapter minioAdapter) {
+    public CoreValidD2ConservativeAdapterService(final CoreValidD2ConservativeClient coreValidD2ConservativeClient,
+                                                 final MinioAdapter minioAdapter) {
         this.coreValidD2ConservativeClient = coreValidD2ConservativeClient;
         this.minioAdapter = minioAdapter;
     }
 
-    @Bean
-    public Consumer<TaskDto> consumeTask() {
-        return this::handleManualTask;
+    public void handleAutoTask(final TaskDto taskDto,
+                                final List<TaskParameterDto> parameters) {
+        handleTask(taskDto, task -> getAutomaticCoreValidD2ConservativeRequest(task, parameters), AUTOMATIC);
     }
 
-    @Bean
-    public Consumer<TaskDto> consumeAutoTask() {
-        return this::handleAutoTask;
-    }
-
-    private void handleAutoTask(final TaskDto taskDto) {
-        handleTask(taskDto, this::getAutomaticCoreValidD2ConservativeRequest, AUTOMATIC);
-    }
-
-    private void handleManualTask(final TaskDto taskDto) {
-        handleTask(taskDto, this::getManualCoreValidD2ConservativeRequest, MANUAL);
+    public void handleManualTask(final TaskDto taskDto,
+                                  final List<TaskParameterDto> parameters) {
+        handleTask(taskDto, task -> getManualCoreValidD2ConservativeRequest(task, parameters), MANUAL);
     }
 
     private void handleTask(final TaskDto taskDto,
@@ -75,7 +68,7 @@ public class CoreValidD2ConservativeAdapterListener {
             }
         } catch (final Exception e) {
             throw new CoreValidD2ConservativeAdapterException(String.format("Error during handling of %s run request on TS %s",
-                                                              launchType, taskDto.getTimestamp()), e);
+                                                                            launchType, taskDto.getTimestamp()), e);
         }
 
     }
@@ -85,16 +78,19 @@ public class CoreValidD2ConservativeAdapterListener {
         return status == READY || status == SUCCESS || status == ERROR;
     }
 
-    CoreValidD2ConservativeRequest getManualCoreValidD2ConservativeRequest(final TaskDto taskDto) {
-        return getCoreValidD2ConservativeRequest(taskDto, false);
+    CoreValidD2ConservativeRequest getManualCoreValidD2ConservativeRequest(final TaskDto taskDto,
+                                                                           final List<TaskParameterDto> parameters) {
+        return getCoreValidD2ConservativeRequest(taskDto, false, parameters);
     }
 
-    CoreValidD2ConservativeRequest getAutomaticCoreValidD2ConservativeRequest(final TaskDto taskDto) {
-        return getCoreValidD2ConservativeRequest(taskDto, true);
+    CoreValidD2ConservativeRequest getAutomaticCoreValidD2ConservativeRequest(final TaskDto taskDto,
+                                                                              final List<TaskParameterDto> parameters) {
+        return getCoreValidD2ConservativeRequest(taskDto, true, parameters);
     }
 
     CoreValidD2ConservativeRequest getCoreValidD2ConservativeRequest(final TaskDto taskDto,
-                                                 final boolean isLaunchedAutomatically) {
+                                                                     final boolean isLaunchedAutomatically,
+                                                                     final List<TaskParameterDto> parameters) {
         final String id = taskDto.getId().toString();
         final OffsetDateTime offsetDateTime = taskDto.getTimestamp();
         final List<ProcessFileDto> processFiles = taskDto.getInputs();
@@ -106,7 +102,7 @@ public class CoreValidD2ConservativeAdapterListener {
             final String fileName = processFileDto.getFilename();
             switch (fileType) {
                 case "CNEC-RAM" -> cnecRam = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
-                case "VERTICE" -> vertice = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
+                case "VERTICES" -> vertice = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
                 default -> throw new IllegalStateException("Unexpected value: " + fileType);
             }
         }
@@ -116,7 +112,8 @@ public class CoreValidD2ConservativeAdapterListener {
                 offsetDateTime,
                 cnecRam,
                 vertice,
-                isLaunchedAutomatically
+                isLaunchedAutomatically,
+                parameters
         );
     }
 
@@ -129,7 +126,7 @@ public class CoreValidD2ConservativeAdapterListener {
                         launchType,
                         taskDto.getTimestamp());
             throw new CoreValidD2ConservativeAdapterException("Failed to handle %s run request on timestamp because it has no run history"
-                                                        .formatted(launchType));
+                                                                      .formatted(launchType));
         }
         runHistory.sort((o1, o2) -> o2.getExecutionDate().compareTo(o1.getExecutionDate()));
         return runHistory.getFirst().getId().toString();
