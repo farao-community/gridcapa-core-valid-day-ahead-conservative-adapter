@@ -53,11 +53,11 @@ public class CoreValidD2ConservativeAdapterListener {
         return this::handleAutoTask;
     }
 
-    public void handleAutoTask(final TaskDto taskDto) {
+    private void handleAutoTask(final TaskDto taskDto) {
         handleTask(taskDto, this::getAutomaticCoreValidD2ConservativeRequest, AUTOMATIC);
     }
 
-    public void handleManualTask(final TaskDto taskDto) {
+    private void handleManualTask(final TaskDto taskDto) {
         handleTask(taskDto, this::getManualCoreValidD2ConservativeRequest, MANUAL);
     }
 
