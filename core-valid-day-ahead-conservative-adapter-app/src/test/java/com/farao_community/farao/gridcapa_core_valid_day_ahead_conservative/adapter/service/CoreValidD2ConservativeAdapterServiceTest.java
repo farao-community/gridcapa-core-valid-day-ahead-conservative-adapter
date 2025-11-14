@@ -78,16 +78,16 @@ class CoreValidD2ConservativeAdapterServiceTest {
     @BeforeEach
     void setUp() {
         cnecRamFileType = "CNEC-RAM";
-        verticeFileType = "VERTICE";
+        verticeFileType = "VERTICES";
 
         cnecRamFileName = "cnec-ram";
-        verticeFileName = "vertice";
+        verticeFileName = "vertices";
 
         cnecRamFilePath = "/CNEC-RAM";
-        verticeFilePath = "/VERTICE";
+        verticeFilePath = "/VERTICES";
 
         cnecRamFileUrl = "file://CNEC-RAM/cnecram";
-        verticeFileUrl = "file://VERTICE/vertice";
+        verticeFileUrl = "file://VERTICES/vertices";
 
         Mockito.when(minioAdapter.generatePreSignedUrlFromFullMinioPath(cnecRamFilePath, 1)).thenReturn(cnecRamFileUrl);
         Mockito.when(minioAdapter.generatePreSignedUrlFromFullMinioPath(verticeFilePath, 1)).thenReturn(verticeFileUrl);

@@ -15,7 +15,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 @SuppressWarnings("hideutilityclassconstructor")
 @SpringBootApplication
-@EnableConfigurationProperties(CoreValidD2ConservativeAdapterConfiguration.class)
+@EnableConfigurationProperties({CoreValidD2ConservativeAdapterConfiguration.class})
 @EnableWebMvc
 @EnableRetry
 public class CoreValidD2ConservativeAdapterApplication {

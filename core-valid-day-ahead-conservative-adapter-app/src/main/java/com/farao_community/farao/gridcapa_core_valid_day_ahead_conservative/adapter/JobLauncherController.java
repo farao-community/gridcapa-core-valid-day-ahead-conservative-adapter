@@ -27,12 +27,12 @@ public class JobLauncherController {
 
     private final JobLauncherManualService jobLauncherService;
 
-    public JobLauncherController(JobLauncherManualService jobLauncherManualService) {
+    public JobLauncherController(final JobLauncherManualService jobLauncherManualService) {
         this.jobLauncherService = jobLauncherManualService;
     }
 
     @PostMapping(value = "/start/{timestamp}")
-    public ResponseEntity<Void> launchJob(@PathVariable String timestamp, @RequestBody List<ParameterDto> parameters) {
+    public ResponseEntity<Void> launchJob(final @PathVariable String timestamp, @RequestBody List<ParameterDto> parameters) {
         List<TaskParameterDto> taskParameterDtos = List.of();
         if (parameters != null) {
             taskParameterDtos = parameters.stream().map(TaskParameterDto::new).toList();
