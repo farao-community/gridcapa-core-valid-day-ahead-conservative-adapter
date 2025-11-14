@@ -6,20 +6,13 @@
  */
 package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative;
 
-import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.configuration.CoreValidD2ConservativeAdapterConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.retry.annotation.EnableRetry;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 @SuppressWarnings("hideutilityclassconstructor")
 @SpringBootApplication
-@EnableConfigurationProperties({CoreValidD2ConservativeAdapterConfiguration.class})
-@EnableWebMvc
-@EnableRetry
 public class CoreValidD2ConservativeAdapterApplication {
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         SpringApplication.run(CoreValidD2ConservativeAdapterApplication.class, args);
     }
 }

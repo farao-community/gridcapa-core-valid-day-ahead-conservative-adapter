@@ -10,7 +10,6 @@ import com.farao_community.farao.gridcapa.task_manager.api.ProcessFileDto;
 import com.farao_community.farao.gridcapa.task_manager.api.ProcessRunDto;
 import com.farao_community.farao.gridcapa.task_manager.api.TaskDto;
 import com.farao_community.farao.gridcapa.task_manager.api.TaskStatus;
-import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.exception.CoreValidD2ConservativeAdapterException;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.api.resource.CoreValidD2ConservativeFileResource;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.api.resource.CoreValidD2ConservativeRequest;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.starter.CoreValidD2ConservativeClient;
@@ -18,7 +17,7 @@ import com.farao_community.farao.minio_adapter.starter.MinioAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -29,17 +28,17 @@ import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.ERR
 import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.READY;
 import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.SUCCESS;
 
-@Service
-public class CoreValidD2ConservativeAdapterService {
+@Component
+public class CoreValidD2ConservativeAdapterListener {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CoreValidD2ConservativeAdapterService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CoreValidD2ConservativeAdapterListener.class);
     public static final String AUTOMATIC = "automatic";
     public static final String MANUAL = "manual";
     private final CoreValidD2ConservativeClient coreValidD2ConservativeClient;
     private final MinioAdapter minioAdapter;
 
-    public CoreValidD2ConservativeAdapterService(final CoreValidD2ConservativeClient coreValidD2ConservativeClient,
-                                                 final MinioAdapter minioAdapter) {
+    public CoreValidD2ConservativeAdapterListener(final CoreValidD2ConservativeClient coreValidD2ConservativeClient,
+                                                  final MinioAdapter minioAdapter) {
         this.coreValidD2ConservativeClient = coreValidD2ConservativeClient;
         this.minioAdapter = minioAdapter;
     }

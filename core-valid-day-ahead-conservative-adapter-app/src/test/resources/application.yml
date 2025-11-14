@@ -2,3 +2,10 @@ spring:
   cloud:
     function:
       definition: consumeTask;consumeAutoTask
+
+minio-adapter:
+  bucket: bucket-for-tests
+  base-path: base/path/for/tests
+  access-key: gridcapa
+  secret-key: gridcapa-secret
+  url: https://minio.test/
