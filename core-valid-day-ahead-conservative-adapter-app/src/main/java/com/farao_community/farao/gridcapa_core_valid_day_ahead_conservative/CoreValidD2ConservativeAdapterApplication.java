@@ -6,7 +6,7 @@
  */
 package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative;
 
-import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.configuration.CoreValidD2ConservativeAdapterConfiguration;
+import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.configuration.CoreValidD2ConservativeAdapterConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

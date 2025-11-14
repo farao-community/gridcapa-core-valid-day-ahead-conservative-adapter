@@ -4,24 +4,25 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.service;
+package com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative;
 
 import com.farao_community.farao.gridcapa.task_manager.api.ProcessFileDto;
 import com.farao_community.farao.gridcapa.task_manager.api.ProcessRunDto;
 import com.farao_community.farao.gridcapa.task_manager.api.TaskDto;
-import com.farao_community.farao.gridcapa.task_manager.api.TaskParameterDto;
 import com.farao_community.farao.gridcapa.task_manager.api.TaskStatus;
-import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.adapter.exception.CoreValidD2ConservativeAdapterException;
+import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.exception.CoreValidD2ConservativeAdapterException;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.api.resource.CoreValidD2ConservativeFileResource;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.api.resource.CoreValidD2ConservativeRequest;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.starter.CoreValidD2ConservativeClient;
 import com.farao_community.farao.minio_adapter.starter.MinioAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.farao_community.farao.gridcapa.task_manager.api.TaskStatus.ERROR;
@@ -43,14 +44,22 @@ public class CoreValidD2ConservativeAdapterService {
         this.minioAdapter = minioAdapter;
     }
 
-    public void handleAutoTask(final TaskDto taskDto,
-                                final List<TaskParameterDto> parameters) {
-        handleTask(taskDto, task -> getAutomaticCoreValidD2ConservativeRequest(task, parameters), AUTOMATIC);
+    @Bean
+    public Consumer<TaskDto> consumeTask() {
+        return this::handleManualTask;
     }
 
-    public void handleManualTask(final TaskDto taskDto,
-                                  final List<TaskParameterDto> parameters) {
-        handleTask(taskDto, task -> getManualCoreValidD2ConservativeRequest(task, parameters), MANUAL);
+    @Bean
+    public Consumer<TaskDto> consumeAutoTask() {
+        return this::handleAutoTask;
+    }
+
+    public void handleAutoTask(final TaskDto taskDto) {
+        handleTask(taskDto, this::getAutomaticCoreValidD2ConservativeRequest, AUTOMATIC);
+    }
+
+    public void handleManualTask(final TaskDto taskDto) {
+        handleTask(taskDto, this::getManualCoreValidD2ConservativeRequest, MANUAL);
     }
 
     private void handleTask(final TaskDto taskDto,
@@ -78,19 +87,16 @@ public class CoreValidD2ConservativeAdapterService {
         return status == READY || status == SUCCESS || status == ERROR;
     }
 
-    CoreValidD2ConservativeRequest getManualCoreValidD2ConservativeRequest(final TaskDto taskDto,
-                                                                           final List<TaskParameterDto> parameters) {
-        return getCoreValidD2ConservativeRequest(taskDto, false, parameters);
+    CoreValidD2ConservativeRequest getManualCoreValidD2ConservativeRequest(final TaskDto taskDto) {
+        return getCoreValidD2ConservativeRequest(taskDto, false);
     }
 
-    CoreValidD2ConservativeRequest getAutomaticCoreValidD2ConservativeRequest(final TaskDto taskDto,
-                                                                              final List<TaskParameterDto> parameters) {
-        return getCoreValidD2ConservativeRequest(taskDto, true, parameters);
+    CoreValidD2ConservativeRequest getAutomaticCoreValidD2ConservativeRequest(final TaskDto taskDto) {
+        return getCoreValidD2ConservativeRequest(taskDto, true);
     }
 
     CoreValidD2ConservativeRequest getCoreValidD2ConservativeRequest(final TaskDto taskDto,
-                                                                     final boolean isLaunchedAutomatically,
-                                                                     final List<TaskParameterDto> parameters) {
+                                                                     final boolean isLaunchedAutomatically) {
         final String id = taskDto.getId().toString();
         final OffsetDateTime offsetDateTime = taskDto.getTimestamp();
         final List<ProcessFileDto> processFiles = taskDto.getInputs();
@@ -113,7 +119,7 @@ public class CoreValidD2ConservativeAdapterService {
                 cnecRam,
                 vertice,
                 isLaunchedAutomatically,
-                parameters
+                taskDto.getParameters()
         );
     }
 
