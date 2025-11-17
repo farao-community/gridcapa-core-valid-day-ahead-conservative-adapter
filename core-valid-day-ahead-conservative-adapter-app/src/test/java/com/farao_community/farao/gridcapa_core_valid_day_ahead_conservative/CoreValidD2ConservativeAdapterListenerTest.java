@@ -100,8 +100,8 @@ class CoreValidD2ConservativeAdapterListenerTest {
         Assertions.assertEquals(taskDto.getId().toString(), coreValidRequest.getId());
         Assertions.assertEquals(cnecRamFileName, coreValidRequest.getCnecRam().getFilename());
         Assertions.assertEquals(cnecRamFileUrl, coreValidRequest.getCnecRam().getUrl());
-        Assertions.assertEquals(verticeFileName, coreValidRequest.getVertice().getFilename());
-        Assertions.assertEquals(verticeFileUrl, coreValidRequest.getVertice().getUrl());
+        Assertions.assertEquals(verticeFileName, coreValidRequest.getVertices().getFilename());
+        Assertions.assertEquals(verticeFileUrl, coreValidRequest.getVertices().getUrl());
         Assertions.assertFalse(coreValidRequest.getLaunchedAutomatically());
     }
 

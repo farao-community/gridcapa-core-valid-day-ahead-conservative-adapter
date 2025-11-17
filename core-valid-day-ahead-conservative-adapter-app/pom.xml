@@ -72,6 +72,7 @@
             <groupId>com.farao-community.farao</groupId>
             <artifactId>gridcapa-core-valid-day-ahead-conservative-api</artifactId>
         </dependency>
+
         <!-- TEST DEPENDENCIES -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
