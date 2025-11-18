@@ -34,6 +34,8 @@ public class CoreValidD2ConservativeAdapterListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(CoreValidD2ConservativeAdapterListener.class);
     public static final String AUTOMATIC = "automatic";
     public static final String MANUAL = "manual";
+    public static final String CNEC_RAM = "CNEC-RAM";
+    public static final String VERTICES = "VERTICES";
     private final CoreValidD2ConservativeClient coreValidD2ConservativeClient;
     private final MinioAdapter minioAdapter;
 
@@ -64,19 +66,19 @@ public class CoreValidD2ConservativeAdapterListener {
     private void handleTask(final TaskDto taskDto,
                             final Function<TaskDto, CoreValidD2ConservativeRequest> coreValidReqMapper,
                             final String launchType) {
+        final OffsetDateTime timestamp = taskDto.getTimestamp();
         try {
             if (isReadyOrFinished(taskDto)) {
-                LOGGER.info("Handling {} run request on TS {} ", launchType, taskDto.getTimestamp());
+                LOGGER.info("Handling {} run request on TS {} ", launchType, timestamp);
                 final CoreValidD2ConservativeRequest request = coreValidReqMapper.apply(taskDto);
                 coreValidD2ConservativeClient.run(request);
             } else {
                 LOGGER.warn("Failed to handle {} run request on timestamp {} because it is not ready yet",
-                            launchType,
-                            taskDto.getTimestamp());
+                            launchType, timestamp);
             }
         } catch (final Exception e) {
             throw new CoreValidD2ConservativeAdapterException(String.format("Error during handling of %s run request on TS %s",
-                                                                            launchType, taskDto.getTimestamp()), e);
+                                                                            launchType, timestamp), e);
         }
 
     }
@@ -94,46 +96,46 @@ public class CoreValidD2ConservativeAdapterListener {
         return getCoreValidD2ConservativeRequest(taskDto, true);
     }
 
-    CoreValidD2ConservativeRequest getCoreValidD2ConservativeRequest(final TaskDto taskDto,
-                                                                     final boolean isLaunchedAutomatically) {
-        final String id = taskDto.getId().toString();
-        final OffsetDateTime offsetDateTime = taskDto.getTimestamp();
-        final List<ProcessFileDto> processFiles = taskDto.getInputs();
+    private CoreValidD2ConservativeRequest getCoreValidD2ConservativeRequest(final TaskDto taskDto,
+                                                                             final boolean isAuto) {
         CoreValidD2ConservativeFileResource cnecRam = null;
-        CoreValidD2ConservativeFileResource vertice = null;
-        for (final ProcessFileDto processFileDto : processFiles) {
-            final String fileType = processFileDto.getFileType();
-            final String fileUrl = minioAdapter.generatePreSignedUrlFromFullMinioPath(processFileDto.getFilePath(), 1);
-            final String fileName = processFileDto.getFilename();
+        CoreValidD2ConservativeFileResource vertices = null;
+
+        for (final ProcessFileDto input : taskDto.getInputs()) {
+            final String fileType = input.getFileType();
+            final String fileUrl = minioAdapter.generatePreSignedUrlFromFullMinioPath(input.getFilePath(), 1);
+            final String fileName = input.getFilename();
             switch (fileType) {
-                case "CNEC-RAM" -> cnecRam = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
-                case "VERTICES" -> vertice = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
+                case CNEC_RAM -> cnecRam = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
+                case VERTICES -> vertices = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
                 default -> throw new IllegalStateException("Unexpected value: " + fileType);
             }
         }
         return new CoreValidD2ConservativeRequest(
-                id,
-                getCurrentRunId(taskDto, isLaunchedAutomatically),
-                offsetDateTime,
+                taskDto.getId().toString(),
+                getCurrentRunId(taskDto, isAuto),
+                taskDto.getTimestamp(),
                 cnecRam,
-                vertice,
-                isLaunchedAutomatically,
+                vertices,
+                isAuto,
                 taskDto.getParameters()
         );
     }
 
     private String getCurrentRunId(final TaskDto taskDto,
-                                   final boolean isLaunchedAutomatically) {
+                                   final boolean isAuto) {
         final List<ProcessRunDto> runHistory = taskDto.getRunHistory();
         if (runHistory == null || runHistory.isEmpty()) {
-            final String launchType = isLaunchedAutomatically ? AUTOMATIC : MANUAL;
+            final String launchType = isAuto ? AUTOMATIC : MANUAL;
             LOGGER.warn("Failed to handle {} run request on timestamp {} because it has no run history",
                         launchType,
                         taskDto.getTimestamp());
             throw new CoreValidD2ConservativeAdapterException("Failed to handle %s run request on timestamp because it has no run history"
                                                                       .formatted(launchType));
         }
-        runHistory.sort((o1, o2) -> o2.getExecutionDate().compareTo(o1.getExecutionDate()));
+        runHistory.sort((run1, run2) ->
+                                run2.getExecutionDate().compareTo(run1.getExecutionDate()));
+
         return runHistory.getFirst().getId().toString();
     }
 }
