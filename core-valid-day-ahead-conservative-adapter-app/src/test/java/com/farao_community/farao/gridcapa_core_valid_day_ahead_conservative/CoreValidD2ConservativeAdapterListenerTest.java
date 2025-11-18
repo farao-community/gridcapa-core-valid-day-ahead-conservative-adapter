@@ -15,6 +15,7 @@ import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.api.
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.api.resource.CoreValidD2ConservativeRequest;
 import com.farao_community.farao.gridcapa_core_valid_day_ahead_conservative.starter.CoreValidD2ConservativeClient;
 import com.farao_community.farao.minio_adapter.starter.MinioAdapter;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,7 @@ class CoreValidD2ConservativeAdapterListenerTest {
     ArgumentCaptor<CoreValidD2ConservativeRequest> argumentCaptor;
 
     @Autowired
-    private CoreValidD2ConservativeAdapterListener coreValidD2ConservativeAdapterListener;
+    private CoreValidD2ConservativeAdapterListener listener;
     private String cnecRamFileType;
     private String verticesFileType;
 
@@ -124,7 +125,7 @@ class CoreValidD2ConservativeAdapterListenerTest {
     @Test
     void testGetManualCoreValidRequest() {
         final TaskDto taskDto = createTaskDtoWithStatus(READY);
-        final CoreValidD2ConservativeRequest coreValidRequest = coreValidD2ConservativeAdapterListener.getManualCoreValidD2ConservativeRequest(taskDto);
+        final CoreValidD2ConservativeRequest coreValidRequest = listener.getManualCoreValidD2ConservativeRequest(taskDto);
         final CoreValidD2ConservativeFileResource cnecRam = coreValidRequest.getCnecRam();
         final CoreValidD2ConservativeFileResource vertices = coreValidRequest.getVertices();
         Assertions.assertEquals(taskDto.getId().toString(), coreValidRequest.getId());
@@ -149,14 +150,14 @@ class CoreValidD2ConservativeAdapterListenerTest {
 
         Assertions.assertThrows(
                 CoreValidD2ConservativeAdapterException.class,
-                () -> coreValidD2ConservativeAdapterListener.getManualCoreValidD2ConservativeRequest(taskDto),
+                () -> listener.getManualCoreValidD2ConservativeRequest(taskDto),
                 "Failed to handle manual run request on timestamp because it has no run history");
     }
 
     @Test
     void testGetAutomaticCoreValidRequest() {
         final TaskDto taskDto = createTaskDtoWithStatus(READY);
-        final CoreValidD2ConservativeRequest coreValidRequest = coreValidD2ConservativeAdapterListener.getAutomaticCoreValidD2ConservativeRequest(taskDto);
+        final CoreValidD2ConservativeRequest coreValidRequest = listener.getAutomaticCoreValidD2ConservativeRequest(taskDto);
         Assertions.assertTrue(coreValidRequest.getLaunchedAutomatically());
     }
 
@@ -165,26 +166,42 @@ class CoreValidD2ConservativeAdapterListenerTest {
         final UUID id = UUID.randomUUID();
         final OffsetDateTime timestamp = OffsetDateTime.parse("2021-12-07T14:30Z");
         final List<ProcessFileDto> processFiles = new ArrayList<>();
-        processFiles.add(new ProcessFileDto(cnecRamFilePath, cnecRamFileType, VALIDATED, cnecRamFileName, "docId1", timestamp));
-        processFiles.add(new ProcessFileDto(verticesFilePath, "VORTICE", VALIDATED, verticesFileName, "docId2", timestamp));
-        final List<ProcessEventDto> processEvents = new ArrayList<>();
-        final TaskDto taskDto = new TaskDto(id,
-                                            timestamp,
-                                            READY,
-                                            processFiles,
-                                            null,
-                                            emptyList(),
-                                            processEvents,
-                                            emptyList(),
-                                            emptyList());
-        Assertions.assertThrows(IllegalStateException.class, () -> coreValidD2ConservativeAdapterListener.getManualCoreValidD2ConservativeRequest(taskDto));
+        processFiles.add(new ProcessFileDto(cnecRamFilePath,
+                                            cnecRamFileType,
+                                            VALIDATED,
+                                            cnecRamFileName,
+                                            "docId1",
+                                            timestamp));
+        processFiles.add(new ProcessFileDto(verticesFilePath,
+                                            "VORTICE",
+                                            VALIDATED,
+                                            verticesFileName,
+                                            "docId2",
+                                            timestamp));
+        final TaskDto taskDto = getTaskDto(id, timestamp, processFiles);
+        Assertions.assertThrows(IllegalStateException.class,
+                                () -> listener.getManualCoreValidD2ConservativeRequest(taskDto));
 
+    }
+
+    private static @NotNull TaskDto getTaskDto(final UUID id,
+                                               final OffsetDateTime timestamp,
+                                               final List<ProcessFileDto> processFiles) {
+        return new TaskDto(id,
+                           timestamp,
+                           READY,
+                           processFiles,
+                           null,
+                           emptyList(),
+                           new ArrayList<>(),
+                           emptyList(),
+                           emptyList());
     }
 
     @Test
     void consumeReadyAutoTask() {
         final TaskDto taskDto = createTaskDtoWithStatus(READY);
-        coreValidD2ConservativeAdapterListener.consumeAutoTask().accept(taskDto);
+        listener.consumeAutoTask().accept(taskDto);
         Mockito.verify(coreValidD2ConservativeClient).run(argumentCaptor.capture());
         final CoreValidD2ConservativeRequest coreValidRequest = argumentCaptor.getValue();
         Assertions.assertTrue(coreValidRequest.getLaunchedAutomatically());
@@ -194,7 +211,7 @@ class CoreValidD2ConservativeAdapterListenerTest {
     @EnumSource(value = TaskStatus.class, names = {"READY", "SUCCESS", "ERROR"})
     void consumeReadyTask(final TaskStatus taskStatus) {
         final TaskDto taskDto = createTaskDtoWithStatus(taskStatus);
-        coreValidD2ConservativeAdapterListener.consumeTask().accept(taskDto);
+        listener.consumeTask().accept(taskDto);
         Mockito.verify(coreValidD2ConservativeClient).run(argumentCaptor.capture());
         final CoreValidD2ConservativeRequest coreValidRequest = argumentCaptor.getValue();
         Assertions.assertFalse(coreValidRequest.getLaunchedAutomatically());
@@ -203,7 +220,7 @@ class CoreValidD2ConservativeAdapterListenerTest {
     @Test
     void consumeCreatedTask() {
         final TaskDto taskDto = createTaskDtoWithStatus(CREATED);
-        coreValidD2ConservativeAdapterListener.consumeTask().accept(taskDto);
+        listener.consumeTask().accept(taskDto);
         Mockito.verify(coreValidD2ConservativeClient, Mockito.never()).run(argumentCaptor.capture());
     }
 
@@ -211,7 +228,7 @@ class CoreValidD2ConservativeAdapterListenerTest {
     void consumeTaskThrowsException() {
         final TaskDto taskDto = createTaskDtoWithStatus(READY);
         Mockito.doThrow(RuntimeException.class).when(coreValidD2ConservativeClient).run(Mockito.any());
-        final Consumer<TaskDto> taskDtoConsumer = coreValidD2ConservativeAdapterListener.consumeTask();
+        final Consumer<TaskDto> taskDtoConsumer = listener.consumeTask();
         Assertions.assertThrows(
                 CoreValidD2ConservativeAdapterException.class,
                 () -> taskDtoConsumer.accept(taskDto),
@@ -222,7 +239,7 @@ class CoreValidD2ConservativeAdapterListenerTest {
     @EnumSource(value = TaskStatus.class, names = {"READY", "SUCCESS", "ERROR"})
     void consumeSuccessAutoTask(final TaskStatus taskStatus) {
         final TaskDto taskDto = createTaskDtoWithStatus(taskStatus);
-        coreValidD2ConservativeAdapterListener.consumeAutoTask().accept(taskDto);
+        listener.consumeAutoTask().accept(taskDto);
         Mockito.verify(coreValidD2ConservativeClient).run(argumentCaptor.capture());
         final CoreValidD2ConservativeRequest coreValidD2ConservativeRequest = argumentCaptor.getValue();
         assert coreValidD2ConservativeRequest.getLaunchedAutomatically();
@@ -231,7 +248,7 @@ class CoreValidD2ConservativeAdapterListenerTest {
     @Test
     void consumeCreatedAutoTask() {
         final TaskDto taskDto = createTaskDtoWithStatus(CREATED);
-        coreValidD2ConservativeAdapterListener.consumeAutoTask().accept(taskDto);
+        listener.consumeAutoTask().accept(taskDto);
         Mockito.verify(coreValidD2ConservativeClient, Mockito.never()).run(argumentCaptor.capture());
     }
 
@@ -239,7 +256,7 @@ class CoreValidD2ConservativeAdapterListenerTest {
     void consumeAutoTaskThrowsException() {
         final TaskDto taskDto = createTaskDtoWithStatus(READY);
         Mockito.doThrow(RuntimeException.class).when(coreValidD2ConservativeClient).run(Mockito.any());
-        final Consumer<TaskDto> taskDtoConsumer = coreValidD2ConservativeAdapterListener.consumeAutoTask();
+        final Consumer<TaskDto> taskDtoConsumer = listener.consumeAutoTask();
         Assertions.assertThrows(
                 CoreValidD2ConservativeAdapterException.class,
                 () -> taskDtoConsumer.accept(taskDto),
