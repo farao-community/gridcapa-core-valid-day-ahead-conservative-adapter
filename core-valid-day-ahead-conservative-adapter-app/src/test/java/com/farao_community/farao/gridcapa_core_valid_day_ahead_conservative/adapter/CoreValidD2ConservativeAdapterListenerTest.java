@@ -59,15 +59,19 @@ class CoreValidD2ConservativeAdapterListenerTest {
     private CoreValidD2ConservativeAdapterListener listener;
     private String cnecRamFileType;
     private String verticesFileType;
+    private String npfFileType;
 
     private String cnecRamFileName;
     private String verticesFileName;
+    private String npfFileName;
 
     private String cnecRamFilePath;
     private String verticesFilePath;
+    private String npfFilePath;
 
     private String cnecRamFileUrl;
     private String verticesFileUrl;
+    private String npfFileUrl;
 
     TaskDto createTaskDtoWithStatus(final TaskStatus status) {
         final UUID id = UUID.randomUUID();
@@ -85,6 +89,12 @@ class CoreValidD2ConservativeAdapterListenerTest {
                                             VALIDATED,
                                             verticesFileName,
                                             "docId2",
+                                            timestamp));
+        processFiles.add(new ProcessFileDto(npfFilePath,
+                                            npfFileType,
+                                            VALIDATED,
+                                            npfFileName,
+                                            "docId3",
                                             timestamp));
 
         final List<ProcessEventDto> processEvents = new ArrayList<>();
@@ -106,20 +116,26 @@ class CoreValidD2ConservativeAdapterListenerTest {
     void setUp() {
         cnecRamFileType = "CNEC-RAM";
         verticesFileType = "VERTICES";
+        npfFileType = "NET-POSITION-FORECAST";
 
         cnecRamFileName = "cnec-ram";
         verticesFileName = "vertices";
+        npfFileName = "npf";
 
         cnecRamFilePath = "/CNEC-RAM";
         verticesFilePath = "/VERTICES";
+        npfFilePath = "/NET-POSITION-FORECAST";
 
         cnecRamFileUrl = "file://CNEC-RAM/cnecram";
         verticesFileUrl = "file://VERTICES/vertices";
+        npfFileUrl = "file://NET-POSITION-FORECAST/npf";
 
         Mockito.when(minioAdapter.generatePreSignedUrlFromFullMinioPath(cnecRamFilePath, 1))
                 .thenReturn(cnecRamFileUrl);
         Mockito.when(minioAdapter.generatePreSignedUrlFromFullMinioPath(verticesFilePath, 1))
                 .thenReturn(verticesFileUrl);
+        Mockito.when(minioAdapter.generatePreSignedUrlFromFullMinioPath(npfFilePath, 1))
+                .thenReturn(npfFileUrl);
     }
 
     @Test
@@ -128,11 +144,14 @@ class CoreValidD2ConservativeAdapterListenerTest {
         final CoreValidD2ConservativeRequest coreValidRequest = listener.getManualCoreValidD2ConservativeRequest(taskDto);
         final CoreValidD2ConservativeFileResource cnecRam = coreValidRequest.getCnecRam();
         final CoreValidD2ConservativeFileResource vertices = coreValidRequest.getVertices();
+        final CoreValidD2ConservativeFileResource npf = coreValidRequest.getNetPositionForecast();
         Assertions.assertEquals(taskDto.getId().toString(), coreValidRequest.getId());
         Assertions.assertEquals(cnecRamFileName, cnecRam.getFilename());
         Assertions.assertEquals(cnecRamFileUrl, cnecRam.getUrl());
         Assertions.assertEquals(verticesFileName, vertices.getFilename());
         Assertions.assertEquals(verticesFileUrl, vertices.getUrl());
+        Assertions.assertEquals(npfFileName, npf.getFilename());
+        Assertions.assertEquals(npfFileUrl, npf.getUrl());
         Assertions.assertFalse(coreValidRequest.getLaunchedAutomatically());
     }
 
