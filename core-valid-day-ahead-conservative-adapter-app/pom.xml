@@ -5,12 +5,12 @@
     <parent>
         <artifactId>gridcapa-core-valid-day-ahead-conservative-adapter</artifactId>
         <groupId>com.farao-community.farao</groupId>
-        <version>0.1.0-alpha</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>core-valid-day-ahead-conservative-adapter-app</artifactId>
-    <version>0.1.0-alpha</version>
+    <version>1.0.0-SNAPSHOT</version>
     <name>Gridcapa Core Valid day ahead conservative adapter application</name>
     <description>Application that turns a RabbitMQ request from a TaskDto to a CoreValidD2ConservativeRequest</description>
     <url>http://www.farao-community.com</url>
