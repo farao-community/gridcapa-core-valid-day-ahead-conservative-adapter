@@ -36,6 +36,7 @@ public class CoreValidD2ConservativeAdapterListener {
     public static final String MANUAL = "manual";
     public static final String CNEC_RAM = "CNEC-RAM";
     public static final String VERTICES = "VERTICES";
+    public static final String NET_POSITION_FORECAST =  "NET-POSITION-FORECAST";
     private final CoreValidD2ConservativeClient coreValidD2ConservativeClient;
     private final MinioAdapter minioAdapter;
 
@@ -100,6 +101,7 @@ public class CoreValidD2ConservativeAdapterListener {
                                                                              final boolean isAuto) {
         CoreValidD2ConservativeFileResource cnecRam = null;
         CoreValidD2ConservativeFileResource vertices = null;
+        CoreValidD2ConservativeFileResource npf = null;
 
         for (final ProcessFileDto input : taskDto.getInputs()) {
             final String fileType = input.getFileType();
@@ -108,6 +110,7 @@ public class CoreValidD2ConservativeAdapterListener {
             switch (fileType) {
                 case CNEC_RAM -> cnecRam = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
                 case VERTICES -> vertices = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
+                case NET_POSITION_FORECAST ->  npf = new CoreValidD2ConservativeFileResource(fileName, fileUrl);
                 default -> throw new IllegalStateException("Unexpected value: " + fileType);
             }
         }
@@ -117,6 +120,7 @@ public class CoreValidD2ConservativeAdapterListener {
                 taskDto.getTimestamp(),
                 cnecRam,
                 vertices,
+                npf,
                 isAuto,
                 taskDto.getParameters()
         );
