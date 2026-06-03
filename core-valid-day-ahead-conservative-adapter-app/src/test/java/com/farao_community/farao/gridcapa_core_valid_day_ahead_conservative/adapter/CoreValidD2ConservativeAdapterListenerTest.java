@@ -146,12 +146,12 @@ class CoreValidD2ConservativeAdapterListenerTest {
         final CoreValidD2ConservativeFileResource vertices = coreValidRequest.getVertices();
         final CoreValidD2ConservativeFileResource npf = coreValidRequest.getNetPositionForecast();
         Assertions.assertEquals(taskDto.getId().toString(), coreValidRequest.getId());
-        Assertions.assertEquals(cnecRamFileName, cnecRam.getFilename());
-        Assertions.assertEquals(cnecRamFileUrl, cnecRam.getUrl());
-        Assertions.assertEquals(verticesFileName, vertices.getFilename());
-        Assertions.assertEquals(verticesFileUrl, vertices.getUrl());
-        Assertions.assertEquals(npfFileName, npf.getFilename());
-        Assertions.assertEquals(npfFileUrl, npf.getUrl());
+        Assertions.assertEquals(cnecRamFileName, cnecRam.filename());
+        Assertions.assertEquals(cnecRamFileUrl, cnecRam.url());
+        Assertions.assertEquals(verticesFileName, vertices.filename());
+        Assertions.assertEquals(verticesFileUrl, vertices.url());
+        Assertions.assertEquals(npfFileName, npf.filename());
+        Assertions.assertEquals(npfFileUrl, npf.url());
         Assertions.assertFalse(coreValidRequest.getLaunchedAutomatically());
     }
 
